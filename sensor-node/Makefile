@@ -23,9 +23,10 @@ USEMODULE += defaulttransceiver
 USEMODULE += srf02
 USEMODULE += vtimer
 
-export SENSOR_NODE_SRC_ID ?= 0x11
+export SENSOR_NODE_SRC_ID ?= 11
 export SENSOR_NODE_PAN_ID ?= 12
-export CENTRAL_NODE_ADDR ?= 256
+export CENTRAL_NODE_ADDR ?= 50
+export SENSOR_NODE_CHANNEL ?= 26
 
 # Define default settings
 export SRF02_I2C ?= I2C_0
@@ -34,6 +35,9 @@ export SRF02_MODE ?= SRF02_MODE_REAL_CM
 
 include $(RIOTBASE)/Makefile.include
 
+ifneq (,$(SENSOR_NODE_CHANNEL))
+export CFLAGS += -DSENSOR_NODE_CHANNEL=$(SENSOR_NODE_CHANNEL)
+endif
 ifneq (,$(SENSOR_NODE_PAN_ID))
 export CFLAGS += -DSENSOR_NODE_PAN_ID=$(SENSOR_NODE_PAN_ID)
 endif

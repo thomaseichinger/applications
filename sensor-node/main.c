@@ -48,6 +48,65 @@ void init_transceiver(void)
     transceiver_register(transceivers, thread_getpid());
 }
 
+void transceiver_set_channel(void)
+{
+    msg_t mesg;
+    transceiver_command_t tcmd;
+    int32_t c;
+
+    if (transceiver_pid == KERNEL_PID_UNDEF) {
+        puts("Transceiver not initialized");
+        return;
+    }
+
+    tcmd.transceivers = TRANSCEIVER_AT86RF231;
+    tcmd.data = &c;
+    mesg.content.ptr = (char *) &tcmd;
+
+    c = SENSOR_NODE_CHANNEL;
+    printf("[transceiver] Trying to set channel %" PRIi32 "\n", c);
+    mesg.type = SET_CHANNEL;
+
+    msg_send_receive(&mesg, &mesg, transceiver_pid);
+    
+    if (c == -1) {
+        puts("[transceiver] Error setting/getting channel");
+    }
+    else {
+        printf("[transceiver] Got channel: %" PRIi32 "\n", c);
+    }
+}
+
+void transceiver_set_pan(void)
+{
+    if (transceiver_pid == KERNEL_PID_UNDEF) {
+        puts("Transceiver not initialized");
+        return;
+    }
+
+    int32_t p;
+
+    transceiver_command_t tcmd;
+    tcmd.transceivers = TRANSCEIVER_AT86RF231;
+    tcmd.data = &p;
+
+    msg_t mesg;
+    mesg.content.ptr = (char*) &tcmd;
+
+    p = SENSOR_NODE_PAN_ID;
+    printf("[transceiver] Trying to set pan %" PRIi32 "\n", p);
+    mesg.type = SET_PAN;
+
+    msg_send_receive(&mesg, &mesg, transceiver_pid);
+
+    if (p == -1) {
+        puts("[transceiver] Error setting/getting pan");
+    }
+    else {
+        printf("[transceiver] Got pan: %" PRIi32 "\n", p);
+    }
+}
+
 void transceiver_send_handler(uint16_t dest)
 {
     if (transceiver_pid == KERNEL_PID_UNDEF) {
@@ -97,7 +156,8 @@ int main(void)
     puts("[Ok]\n");
 
     init_transceiver();
-
+    transceiver_set_channel();
+    transceiver_set_pan();
 
     msg_init_queue(msg_q, RCV_BUFFER_SIZE);
 
