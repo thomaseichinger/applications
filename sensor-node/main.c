@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "vtimer.h"
+#include "hwtimer.h"
 #include "srf02.h"
 #include "periph/i2c.h"
 
@@ -29,14 +29,14 @@
 #define RCV_BUFFER_SIZE     (64)
 #define RADIO_STACK_SIZE    (KERNEL_CONF_STACKSIZE_DEFAULT)
 
-#define SENSOR_NODE_DISTANCE_TYPE 0x55
+#define SENSOR_NODE_DISTANCE_TYPE 0x02
 
 static msg_t msg_q[RCV_BUFFER_SIZE];
 
-#define SLEEP       (1000 * 1000U)
+#define SLEEP       (1000 * 500U)
 
 static srf02_t srf02_0;
-static char text_msg[20];
+static char text_msg[4];
 
 
 void init_transceiver(void)
@@ -107,6 +107,36 @@ void transceiver_set_pan(void)
     }
 }
 
+void transceiver_set_addr(void)
+{
+    if (transceiver_pid == KERNEL_PID_UNDEF) {
+        puts("Transceiver not initialized");
+        return;
+    }
+
+    int32_t p;
+
+    transceiver_command_t tcmd;
+    tcmd.transceivers = TRANSCEIVER_AT86RF231;
+    tcmd.data = &p;
+
+    msg_t mesg;
+    mesg.content.ptr = (char*) &tcmd;
+
+    p = SENSOR_NODE_SRC_ID;
+    printf("[transceiver] Trying to set addr %" PRIi32 "\n", p);
+    mesg.type = SET_ADDRESS;
+
+    msg_send_receive(&mesg, &mesg, transceiver_pid);
+
+    if (p == -1) {
+        puts("[transceiver] Error setting/getting addr");
+    }
+    else {
+        printf("[transceiver] Got addr: %" PRIi32 "\n", p);
+    }
+}
+
 void transceiver_send_handler(uint16_t dest)
 {
     if (transceiver_pid == KERNEL_PID_UNDEF) {
@@ -122,7 +152,7 @@ void transceiver_send_handler(uint16_t dest)
 
     memset(&p, 0, sizeof(ieee802154_packet_t));
     p.frame.payload = (uint8_t*) text_msg;
-    p.frame.payload_len = strlen(text_msg) + 1;
+    p.frame.payload_len = 4;
     p.frame.fcf.frame_type = IEEE_802154_DATA_FRAME;
     p.frame.fcf.dest_addr_m = IEEE_802154_SHORT_ADDR_M;
     p.frame.fcf.src_addr_m = IEEE_802154_SHORT_ADDR_M;
@@ -158,10 +188,11 @@ int main(void)
     init_transceiver();
     transceiver_set_channel();
     transceiver_set_pan();
-
+    transceiver_set_addr();
+    LED_RED_ON;
     msg_init_queue(msg_q, RCV_BUFFER_SIZE);
 
-    memset(text_msg, 0xaa, 20);
+    memset(text_msg, 'a', 20);
     text_msg[0] = SENSOR_NODE_SRC_ID;
     text_msg[1] = SENSOR_NODE_DISTANCE_TYPE;
 
@@ -176,7 +207,7 @@ int main(void)
         text_msg[2] = (distance>>8);
         text_msg[3] = (char)(distance&0xff);
         transceiver_send_handler(CENTRAL_NODE_ADDR);        
-
-        vtimer_usleep(SLEEP);
+        // LED_RED_TOGGLE;
+        hwtimer_wait(HWTIMER_TICKS(SLEEP));
     }
 }

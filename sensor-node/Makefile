@@ -23,9 +23,9 @@ USEMODULE += defaulttransceiver
 USEMODULE += srf02
 USEMODULE += vtimer
 
-export SENSOR_NODE_SRC_ID ?= 11
+export SENSOR_NODE_SRC_ID ?= 13
 export SENSOR_NODE_PAN_ID ?= 12
-export CENTRAL_NODE_ADDR ?= 50
+export CENTRAL_NODE_ADDR ?= 70
 export SENSOR_NODE_CHANNEL ?= 26
 
 # Define default settings
